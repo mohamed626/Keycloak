@@ -1,0 +1,252 @@
+﻿@inject IConfiguration coniguraion;
+@{
+    ViewData["Title"] = "Users";
+}
+
+
+
+
+<div id="UserModal" class="modal col-md-12" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close ModalCloseBtn" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h3 id="ModalHeader" class="modal-title">Add New User</h3>
+            </div>
+            <div class="modal-body">
+                <form id="UsersForm">
+
+                    <input id="Id" name="Id" type="hidden" value="0" />
+                    <div class="form-group">
+                        <label id="ModalLabel1" class="col-md-3">UserName</label>
+                        <div class="col-md-8">
+                            <input id="Name" type="text" class="form-control" name="Name" data-parsley-required="true" data-parsley-trigger="change" data-parsley-error-message="Name Is Required" />
+                        </div>
+                    </div>
+                
+                    <div class="form-group">
+                        <label id="ModalLabel1" class="col-md-3">Email</label>
+                        <div class="col-md-8">
+                            <input id="Email" type="text" class="form-control" name="Email" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label id="ModalLabel1" class="col-md-3">Phone</label>
+                        <div class="col-md-8">
+                            <input id="Phone" type="text" class="form-control" name="Phone" />
+                        </div>
+                    </div>
+            
+
+
+                </form>
+
+            </div>
+            <div class="modal-footer">
+                <button onclick="addNew();" class="btn btn-success">Add</button>
+                <button type="reset" onclick="resetdata()" class="btn btn-primary">Reset</button>
+                <button id="ModalCloseBtn" type="button" class="ModalCloseBtn btn btn-secondary " data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="card-body border-top" style="margin-left:130px; padding:0px;">
+
+
+
+    <button data-toggle="modal" data-target="#UserModal" class="btn btn-primary">
+         Add User <i class="fas fa-user-plus"></i>
+    </button>
+
+</div>
+
+ <hr />
+<div>
+    <h2 style="text-align:center;">All Users</h2>
+    <br />
+
+    <table id="contacts" class="table table-striped table-bordered dt-responsive second" style="width:100%;text-align:center;font-size:large;background-color:cornsilk">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>FirstName</th>
+                <th>LastName</th>
+                <th>UserName</th>
+                <th>Email</th>
+                <th></th>
+                <th></th>
+            </tr>
+
+        </thead>
+    </table>
+
+</div>
+
+
+
+@section Scripts{
+
+    <script>
+
+        const keycloak = new Keycloak({
+            url: "@coniguraion["keycloak:External_host"]",
+            realm: "first-tenant",
+            clientId: "my-app"
+        });
+
+    </script>
+
+    <script src="~/js/Keycloak/KeycloakConfiguration.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    @*dataTable*@
+    <script src="~/lib/datatables/js/jquery.dataTables.js"></script>
+    <script src="~/lib/datatables/js/dataTables.bootstrap4.js"></script>
+    <!-- Load DataTables Buttons extension CSS and JavaScript -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/2.0.0/css/buttons.dataTables.min.css">
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/2.0.0/js/dataTables.buttons.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/2.0.0/js/buttons.html5.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/2.0.0/js/buttons.print.min.js"></script>
+
+
+    @*sweetalert2*@
+    <script src="~/sweetalert2/sweetalert2/sweetalert2.all.min.js"></script>
+    <script src="~/sweetalert2/sweetalert2/sweetalert2.min.js"></script>
+    <script src="~/js/alerts.js"></script>
+
+
+
+    <script>
+
+
+        initilaze().then((authenticated) => {
+            if (authenticated) {
+                localStorage.setItem("access_token", keycloak.token);
+                localStorage.setItem("refresh_token", keycloak.refreshToken);
+                GetUsers();
+
+            } else {
+                keycloak.login({
+                    redirectUri: window.location.origin + '/Home/Index' // Redirect user after login
+                });
+            }
+        }).catch(() => {
+            console.error('Failed to initialize Keycloak');
+            window.location = window.location.origin + '/Home/Error'
+
+        });
+
+
+        function GetUsers() {
+            if ($.fn.DataTable.isDataTable('#contacts')) {
+                $('#contacts').DataTable().destroy();
+            }
+            $('#contacts').dataTable({
+                "serverSide": true,
+                "searching": true,
+                "ajax": {
+                    "url": window.location.origin + "/api/Users/",
+                    "type": "GET",
+                    "datatype": "json"
+                },
+                "columnDefs": [{
+                    "targets": [0],
+                    // "visible": false,
+                    "searchable": false
+                }],
+                "pageLength": 5,
+                "lengthMenu": [5, 10, 15, 50], // Specify the available page lengths
+
+                "columns": [
+                    { "data": "id", "name": "id", "autowidth": true, "orderable": false },
+                    { "data": "firstName", "name": "firstName", "autowidth": true, "orderable": false },
+                    { "data": "lastName", "name": "lastName", "autowidth": true, "orderable": false },
+                    { "data": "username", "name": "username", "autowidth": true, "orderable": false },
+                    { "data": "email", "name": "email", "autowidth": true, "orderable": false },
+                    {
+
+                        "render": function (data, type, row) {
+                            return '<a href="#" class="btn btn-success edit-row">Edit</a><a href="#" class="btn btn-primary save-row" style="display: none;">Save</a>';
+
+                        },
+                        "orderable": false
+                    },
+                    {
+                        "render": function (data, type, row) {
+                            return '<a href="#" class="btn btn-danger" onclick=DeleteContactConfirmation("' + row.id + '"); > Delete </a>'
+
+                        },
+                        "orderable": false
+                    },
+
+                ]
+            });
+
+        }
+
+
+
+
+        $('#contacts').on('click', '.edit-row', function () {
+            var row = $(this).closest('tr');
+            row.find('.edit-row').hide();
+            row.find('.save-row').show();
+
+            row.find('td:not(:first-child)').attr('contenteditable', 'true');
+            row.find('td:not(:eq(0), :eq(5), :eq(6))').css('border', '1px solid #000');
+        });
+
+
+        $('#contacts').on('click', '.save-row', function () {
+            var row = $(this).closest('tr');
+            row.find('.edit-row').show();
+            row.find('.save-row').hide();
+
+            row.find('td:not(:first-child)').attr('contenteditable', 'false');
+            debugger;
+
+
+
+
+            // Extract the data from the row and update it using AJAX
+            var id = row.find('td:eq(0)').text(); // Get the ID
+            var firstname = row.find('td:eq(1)').text(); // Get the firstname
+            var lastname = row.find('td:eq(2)').text(); // Get the lastname
+            var username = row.find('td:eq(3)').text(); // Get the username
+            var email = row.find('td:eq(4)').text(); // Get the eamil
+
+            // Prepare the data for updating using AJAX
+            var data = {
+                Id: id,
+                FirstName: firstname,
+                LastName: lastname,
+                UserName: username,
+                Email: email
+            };
+       
+            $.ajax({
+                type: "POST",
+                url: '/api/Users/AddEditUser',
+                data: JSON.stringify(data),
+                contentType: 'application/json',
+                success: function (result) {
+                   // resetdata();
+                    SuccessAutoCloseAlert('تم الحفظ بنجاح');
+                    GetUsers();
+
+                },
+                error: function (xhr, status, error) {
+                    ErrorAutoCloseAlert('لم يتم الحفظ');
+                }
+            });
+        });
+
+
+    </script>
+}
+
